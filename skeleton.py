@@ -8,7 +8,7 @@ from tensorflow.keras import layers
 import os
 import glob
 from tensorflow.python.keras import activations
-
+import pandas as pd
 from tensorflow.python.keras.layers.core import Flatten
 
 
@@ -28,7 +28,8 @@ from numpy.random import default_rng
 
 
 class Datagen(tf.keras.utils.Sequence):
-  def __init__(self, list_IDs, labels, batch_size=32,n_classes=200, dim = (64,64), n_channels = 3, shuffle=True):
+  def __init__(self, list_IDs, labels, val, batch_size=32, n_classes=200, dim = (64,64), n_channels = 3, shuffle=True):
+    self.val = val
     self.dim = dim
     self.labels = labels
     self.list_IDs = list_IDs
@@ -61,16 +62,31 @@ class Datagen(tf.keras.utils.Sequence):
     y = np.zeros((self.batch_size), dtype=int)
 
     # Generate data
-    for i, ID in enumerate(list_IDs_temp):
+    if self.val == True:
+      for i, ID in enumerate(list_IDs_temp):
         # Store sample
-        X[i,] = load_img('tiny-imagenet-200/train/' + ID + '/images/' + ID + '_' + str(i) +'.jpeg')
+        X[i,] = load_img('tiny-imagenet-200/val/images/' + str(i))
         #print(X[i,].shape)
         # Store class
         labelid = newdictlabels[ID]
         #print(labelid)
         y[i] = self.labels[labelid]
-    return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
-    # return np.array(X), np.array(y)
+        #print(tf.keras.utils.to_categorical(y, num_classes=self.n_classes))
+      return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+
+    elif self.val == False: 
+      for i, ID in enumerate(list_IDs_temp):
+          print(ID)
+          # Store sample
+          X[i,] = load_img('tiny-imagenet-200/train/' + ID + '/images/' + ID + '_' + str(i) +'.jpeg')
+          #print(X[i,].shape)
+          # Store class
+          labelid = newdictlabels[ID]
+          #print(labelid)
+          y[i] = self.labels[labelid]
+          #print(tf.keras.utils.to_categorical(y, num_classes=self.n_classes))
+      return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      # return np.array(X), np.array(y)
 
   
 
@@ -94,30 +110,24 @@ for i in train_images:
 #print(len(newlistlabels))
 
 
+val_data = open('tiny-imagenet-200/val/val_annotations.txt', "r")
+#val_data.columns = ["image", "class", "x", "y", "w", "h"]
+val_data = val_data.readlines()
+print(val_data[0])
+validation_images = []
+validation_labels = []
+for i in val_data:
+  validation_images.append(i.split('\t')[0])
+  validation_labels.append(i.split('\t')[1])
 
-training_generator = Datagen(train_labels, newlistlabels)
+validation_generator = Datagen(train_labels, newlistlabels, val = False)
 #new = iter(training_generator)
 ##print(new)
-validation_generator = Datagen(train_labels[:50], newlistlabels[:50])
+training_generator = Datagen(validation_images, validation_labels, val = True)
 
-
-#print(training_generator)
-
-
-# model = Sequential([
-#   tf.keras.Input(shape = (64,64,3)),
-#   layers.Conv2D(32,kernel_size=(3,3),activation = "relu"),
-#   layers.MaxPooling2D(pool_size=(2,2)),
-#   layers.Flatten(),
-#   layers.Dense(200,activation = "softmax")
-# ])
-
-def get_keras_model():
+def model():
   input_img = Input(shape=(64, 64, 3))
   x = Conv2D(filters=32, kernel_size=(3, 3), strides=(1, 1), input_shape=(64,64,3), padding='same', activation=None)(input_img)
-  x = BatchNormalization()(x)
-  x = Activation('relu')(x)
-  x = Conv2D(filters=32, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=None)(x)
   x = BatchNormalization()(x)
   x = Activation('relu')(x)
   x = MaxPool2D(pool_size=(4, 4))(x)
@@ -128,11 +138,11 @@ def get_keras_model():
   x = BatchNormalization()(x)
   x = Activation('relu')(x)
   x = GlobalAveragePooling2D()(x)
-  output = Dense(units=10, activation='softmax')(x)
+  output = Dense(units=200, activation='softmax')(x)
 
   return Model(input_img, output)
 
-model = get_keras_model()
+model = model()
 model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"])
 
 # Train model on dataset

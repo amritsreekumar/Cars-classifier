@@ -65,23 +65,23 @@ class Datagen(tf.keras.utils.Sequence):
     if self.val == True:
       for i, ID in enumerate(list_IDs_temp):
         # Store sample
-        X[i,] = load_img('tiny-imagenet-200/val/images/' + str(i))
+        X[i,] = load_img('tiny-imagenet-200/val/images/' + ID)
         #print(X[i,].shape)
         # Store class
-        labelid = newdictlabels[ID]
-        #print(labelid)
-        y[i] = self.labels[labelid]
+        labelid = val_dict[ID]
+        new_label = label_ids[labelid]
+          #print(labelid)
+        y[i] = self.labels[new_label]
         #print(tf.keras.utils.to_categorical(y, num_classes=self.n_classes))
       return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
 
     elif self.val == False: 
       for i, ID in enumerate(list_IDs_temp):
-          print(ID)
           # Store sample
           X[i,] = load_img('tiny-imagenet-200/train/' + ID + '/images/' + ID + '_' + str(i) +'.jpeg')
           #print(X[i,].shape)
           # Store class
-          labelid = newdictlabels[ID]
+          labelid = label_ids[ID]
           #print(labelid)
           y[i] = self.labels[labelid]
           #print(tf.keras.utils.to_categorical(y, num_classes=self.n_classes))
@@ -89,6 +89,14 @@ class Datagen(tf.keras.utils.Sequence):
       # return np.array(X), np.array(y)
 
   
+
+class_ids = open('tiny-imagenet-200/wnids.txt', "r")
+class_ids = class_ids.readlines()
+label_ids = {}
+for i in range(len(class_ids)):
+  label_ids[class_ids[i].split('\n')[0]] = i
+
+print(label_ids)
 
 train_paths = glob.glob('tiny-imagenet-200/train/**/*.JPEG', recursive=True)
 train_images = []
@@ -105,26 +113,40 @@ for i in train_images:
     if k not in newdictlabels:
       newdictlabels[k] = counter
       counter = counter + 1
-    newlistlabels.append(newdictlabels[k])
+    newlistlabels.append(label_ids[k])
 
+print(len(newlistlabels))
 #print(len(newlistlabels))
 
 
 val_data = open('tiny-imagenet-200/val/val_annotations.txt', "r")
 #val_data.columns = ["image", "class", "x", "y", "w", "h"]
 val_data = val_data.readlines()
-print(val_data[0])
 validation_images = []
 validation_labels = []
-for i in val_data:
-  validation_images.append(i.split('\t')[0])
-  validation_labels.append(i.split('\t')[1])
+val_dict = {}
+counter2 = 0
+for i in range(len(val_data)):
+  image_id = val_data[i].split('\t')[0]
+  validation_images.append(image_id)
 
-validation_generator = Datagen(train_labels, newlistlabels, val = False)
+  image_label = val_data[i].split('\t')[1]
+  validation_labels.append(image_label)
+  val_dict[validation_images[i]] = validation_labels[i]
+
+
+new_val_list = []
+for i in validation_labels:
+  new_val_list.append(label_ids[i])
+
+
+training_generator = Datagen(train_labels, newlistlabels, val = False)
+print(newlistlabels[:10])
 #new = iter(training_generator)
 ##print(new)
-training_generator = Datagen(validation_images, validation_labels, val = True)
-
+#change the below to above format train labels
+validation_generator = Datagen(validation_images, new_val_list, val = True)
+print(validation_images[:10])
 def model():
   input_img = Input(shape=(64, 64, 3))
   x = Conv2D(filters=32, kernel_size=(3, 3), strides=(1, 1), input_shape=(64,64,3), padding='same', activation=None)(input_img)
@@ -149,4 +171,5 @@ model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 
 model.fit_generator(generator=training_generator,
                     validation_data=validation_generator,
                     use_multiprocessing=False,
-                    )
+                    epochs = 10,
+                    workers = 6)

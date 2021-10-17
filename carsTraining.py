@@ -54,6 +54,10 @@ if __name__ == "__main__":
 
     ##Does batch size have to be exact divisor of training samples
 
+    validGenerator = DataGeneratorCars(
+        labels=labels, rescale=1. / 255, path_to_train=path_to_train_images,
+        batch_size=5, target_size=(256, 256), channels=3, n_classes=196)
+
     # validDataGenerator = validationGener.flow_from_directory(
     #     validaDir,
     #     target_size=(150, 150),
@@ -65,7 +69,9 @@ if __name__ == "__main__":
     #                               validation_data=validDataGenerator,
     #                               validation_steps=50)
 
-    history = model.fit_generator(trainGeenrator, steps_per_epoch=2000, epochs=10)
+    # history = model.fit_generator(trainGeenrator, steps_per_epoch=2000, epochs=10)
+
+    history = model.fit(trainGeenrator, steps_per_epoch=2000, epochs=10)
     #history
 
 

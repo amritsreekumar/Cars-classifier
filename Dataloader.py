@@ -1,7 +1,7 @@
 import numpy as np
 import keras
 import os
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from PIL import Image as pil_image
 import io
 '''
@@ -52,7 +52,7 @@ class DataGeneratorCars(keras.utils.Sequence):
         'Generate one batch of data'
         # Generate indexes of the batch
         indexes = self.indexes[index * self.batch_size:(index + 1) * self.batch_size]
-        print(index)
+        #print(index)
 
         # Find list of IDs
         list_IDs_temp = [self.list_IDs[k] for k in indexes]

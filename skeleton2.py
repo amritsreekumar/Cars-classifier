@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from tensorflow.keras.layers import Conv2D, BatchNormalization, GlobalAveragePooling2D, \
 Dense, Input, Activation, MaxPool2D
 from tensorflow.keras import Model
+import random
 from numpy.random import default_rng
 
 
@@ -109,12 +110,17 @@ for i in range(len(val_data)):
 
 
 
-X_train, X_test, y_train, y_test = train_test_split(train_labels, train_labels, test_size=0.2, random_state=42, shuffle=True)
+#X_train, X_test, y_train, y_test = train_test_split(train_labels, train_labels, test_size=0.2, random_state=42, shuffle=True)
 
 
-training_generator = Datagen(X_train, label_ids, val_dict = None, val = False)
-validation_generator = Datagen(X_test, label_ids, val_dict = None, val = False)
-test_generator = Datagen(validation_images, label_ids, val_dict, val = True)
+random.shuffle(validation_images)
+
+X_test = validation_images[:8000]
+X_valid = validation_images[8000:]
+
+training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False)
+validation_generator = Datagen(X_valid, label_ids, val_dict, val = True)
+test_generator = Datagen(X_test, label_ids, val_dict, val = True)
 
 
 def model():

@@ -14,7 +14,7 @@ from tensorflow.python.keras.layers.core import Flatten
 import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow.keras.layers import Conv2D, BatchNormalization, GlobalAveragePooling2D, \
-Dense, Input, Activation, MaxPool2D
+Dense, Input, Activation, MaxPool2D, Dropout
 from tensorflow.keras import Model
 import random
 from numpy.random import default_rng
@@ -61,12 +61,12 @@ class Datagen(tf.keras.utils.Sequence):
       for i, ID in enumerate(list_IDs_temp):
         # Store sample
         #X[i,] = load_img('tiny-imagenet-200/val/images/' + ID)
-        X[i,] = load_img('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/val/image/' + ID)
+        X[i,] = load_img('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/val/images/' + ID)
         # Store class
         labelid = self.val_dict[ID]
         new_label = self.label_ids[labelid]
         y[i] = new_label
-      return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      return X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
 
     elif self.val == False: 
       for i, ID in enumerate(list_IDs_temp):
@@ -75,7 +75,7 @@ class Datagen(tf.keras.utils.Sequence):
           # Store class
           labelid = self.label_ids[ID]
           y[i] = labelid
-      return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      return X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
       # return np.array(X), np.array(y)
 
   
@@ -119,35 +119,47 @@ random.shuffle(validation_images)
 X_test = validation_images[:8000]
 X_valid = validation_images[8000:]
 
-training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False)
-validation_generator = Datagen(X_valid, label_ids, val_dict, val = True)
-test_generator = Datagen(X_test, label_ids, val_dict, val = True)
+training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False, batch_size=200)
+validation_generator = Datagen(X_valid, label_ids, val_dict, val = True, batch_size=200)
+test_generator = Datagen(X_test, label_ids, val_dict, val = True, batch_size=200)
 
 
 def model():
   input_img = Input(shape=(64, 64, 3))
-  x = Conv2D(filters=32, kernel_size=(3, 3), strides=(1, 1), input_shape=(64,64,3), padding='same', activation=None)(input_img)
+  x = Conv2D(filters=64, kernel_size=(5, 3), strides=(1, 1), input_shape=(64,64,3), padding='same', activation=None)(input_img)
   x = BatchNormalization()(x)
   x = Activation('relu')(x)
-  x = MaxPool2D(pool_size=(4, 4))(x)
-  x = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=None)(x)
+  x = MaxPool2D(pool_size=(2, 3))(x)
+  #x = Dropout(0.5)(x)
+  x = Conv2D(filters=128, kernel_size=(5, 3), strides=(1, 1), padding='same', activation=None)(x)
   x = BatchNormalization()(x)
   x = Activation('relu')(x)
-  x = Conv2D(filters=128, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=None)(x)
+  x = MaxPool2D(pool_size=(2, 3))(x)
+  #x = Dropout(0.5)(x)
+  x = Conv2D(filters=256, kernel_size=(5, 3), strides=(1, 1),padding='same', activation=None)(x)
   x = BatchNormalization()(x)
   x = Activation('relu')(x)
-  x = Conv2D(filters=128, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=None)(x)
-  x = BatchNormalization()(x)
-  x = Activation('relu')(x)
+  x = MaxPool2D(pool_size=(2, 3))(x)
+  #x = Dropout(0.5)(x)
+  # x = Conv2D(filters=512, kernel_size=(3, 3), strides=(1, 1), activation=None)(x)
+  # x = BatchNormalization()(x)
+  # x = Activation('relu')(x)
   x = Flatten()(x)
   #x = Dense(units=256, activation='relu')(x)
+  # output = Dense(units=200, activation='softmax')(x)
+  x = Dense(units=1024, activation='relu')(x)
+  x = Dropout(0.5)(x)
+  x = Dense(units=512, activation='relu')(x)
+  x = Dropout(0.5)(x)
   output = Dense(units=200, activation='softmax')(x)
+
 
   return Model(input_img, output)
 
   
 
 model = model()
+print(model.summary())
 model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"],)
 
 checkpoint_filepath = 'checkpoint/'
@@ -162,7 +174,7 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
 model.fit_generator(generator=training_generator,
                     validation_data=validation_generator,
                     use_multiprocessing=False,
-                    epochs = 15,
+                    epochs = 50,
                     callbacks = [model_checkpoint_callback],
                     workers = 6)
 loss, acc = model.evaluate_generator(test_generator, steps=3, verbose=0)

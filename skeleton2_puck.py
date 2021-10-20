@@ -137,24 +137,24 @@ random.shuffle(validation_images)
 X_test = validation_images[:8000]
 X_valid = validation_images[8000:]
 
-training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False, batch_size=32)
-validation_generator = Datagen(X_valid, label_ids, val_dict, val = True, batch_size=32)
-test_generator = Datagen(X_test, label_ids, val_dict, val = True, batch_size=32)
+training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False, batch_size=100)
+validation_generator = Datagen(X_valid, label_ids, val_dict, val = True, batch_size=100)
+test_generator = Datagen(X_test, label_ids, val_dict, val = True, batch_size=100)
 
 
 def model():
   input_img = Input(shape=(64, 64, 3))
-  x = Conv2D(filters=64, kernel_size=(5, 3), strides=(1, 1), input_shape=(64,64,3), padding='same', activation=None)(input_img)
+  x = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), input_shape=(64,64,3), padding='same', activation=None)(input_img)
   x = BatchNormalization()(x)
   x = Activation('relu')(x)
   x = MaxPool2D(pool_size=(2, 3))(x)
   #x = Dropout(0.5)(x)
-  x = Conv2D(filters=128, kernel_size=(5, 3), strides=(1, 1), padding='same', activation=None)(x)
+  x = Conv2D(filters=128, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=None)(x)
   x = BatchNormalization()(x)
   x = Activation('relu')(x)
   x = MaxPool2D(pool_size=(2, 3))(x)
   #x = Dropout(0.5)(x)
-  x = Conv2D(filters=256, kernel_size=(5, 3), strides=(1, 1),padding='same', activation=None)(x)
+  x = Conv2D(filters=256, kernel_size=(3, 3), strides=(1, 1),padding='same', activation=None)(x)
   x = BatchNormalization()(x)
   x = Activation('relu')(x)
   x = MaxPool2D(pool_size=(2, 3))(x)

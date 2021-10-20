@@ -19,6 +19,7 @@ Dense, Input, Activation, MaxPool2D, Dropout
 from tensorflow.keras import Model
 import random
 from numpy.random import default_rng
+import keras as K
 
 
 
@@ -136,9 +137,9 @@ random.shuffle(validation_images)
 X_test = validation_images[:8000]
 X_valid = validation_images[8000:]
 
-training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False, batch_size=200)
-validation_generator = Datagen(X_valid, label_ids, val_dict, val = True, batch_size=200)
-test_generator = Datagen(X_test, label_ids, val_dict, val = True, batch_size=200)
+training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False, batch_size=32)
+validation_generator = Datagen(X_valid, label_ids, val_dict, val = True, batch_size=32)
+test_generator = Datagen(X_test, label_ids, val_dict, val = True, batch_size=32)
 
 
 def model():
@@ -177,9 +178,25 @@ def model():
 
 model = model()
 print(model.summary())
-model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"],)
 
+use_saved_model = False
 checkpoint_filepath = 'checkpoint/'
+#####################Loading saved model if one exsists
+if not os.path.exists('checkpoint/saved_model.pb') & use_saved_model:
+    model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"],)
+else:
+    # model.load_weights('checkpoint/saved_model.pb') #load the model from file
+    model = tf.keras.models.load_model(checkpoint_filepath)
+    # print('lr is ', K.get_session().run(model.optimizer.lr))
+    loss, acc = model.evaluate_generator(test_generator, steps=3, verbose=0)
+    print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
+
+    initial_epoch=50
+    epochs=65
+
+# model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"],)
+
+
 model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
     filepath=checkpoint_filepath,
     save_weights_only=False,
@@ -190,7 +207,7 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
 # Train model on dataset
 model.fit_generator(generator=training_generator,
                     validation_data=validation_generator,
-                    use_multiprocessing=False,
+                    use_multiprocessing=True,
                     epochs = 50,
                     callbacks = [model_checkpoint_callback],
                     workers = 6)

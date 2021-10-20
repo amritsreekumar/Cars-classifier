@@ -5,6 +5,7 @@ from tensorflow.keras.preprocessing.image import load_img
 from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.models import Sequential
 from tensorflow.keras import layers
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import os
 import glob
 #from sklearn.model_selection import train_test_split
@@ -33,6 +34,16 @@ class Datagen(tf.keras.utils.Sequence):
     self.n_classes = n_classes
     self.shuffle = shuffle
     self.on_epoch_end()
+    self.augmentor = ImageDataGenerator(
+            rotation_range=40,
+            width_shift_range=0.2,
+            height_shift_range=0.2,
+            shear_range=0.2,
+            zoom_range=0.2,
+            horizontal_flip=True,
+            fill_mode='nearest'
+        )
+
 
   def __len__(self):
     #number of batches per epoch
@@ -66,7 +77,10 @@ class Datagen(tf.keras.utils.Sequence):
         labelid = self.val_dict[ID]
         new_label = self.label_ids[labelid]
         y[i] = new_label
-      return X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      X = X / 255.
+      X_transformed = self.augmentor.flow(X, batch_size=self.batch_size, shuffle=False)
+      return next(X_transformed), tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      #return X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
 
     elif self.val == False: 
       for i, ID in enumerate(list_IDs_temp):
@@ -75,7 +89,10 @@ class Datagen(tf.keras.utils.Sequence):
           # Store class
           labelid = self.label_ids[ID]
           y[i] = labelid
-      return X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      X = X / 255.
+      X_transformed = self.augmentor.flow(X, batch_size=self.batch_size, shuffle=False)
+      return next(X_transformed), tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      r#eturn X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
       # return np.array(X), np.array(y)
 
   
@@ -147,9 +164,9 @@ def model():
   x = Flatten()(x)
   #x = Dense(units=256, activation='relu')(x)
   # output = Dense(units=200, activation='softmax')(x)
-  x = Dense(units=1024, activation='relu')(x)
+  x = Dense(units=1024, activation='sigmoid')(x)
   x = Dropout(0.5)(x)
-  x = Dense(units=512, activation='relu')(x)
+  x = Dense(units=512, activation='sigmoid')(x)
   x = Dropout(0.5)(x)
   output = Dense(units=200, activation='softmax')(x)
 

@@ -3,3 +3,7 @@
 /tiny-imagenet-200
 .vscode/
 token
+/checkpoint
+^__*
+/test
+__pycache__/

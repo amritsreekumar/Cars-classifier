@@ -51,14 +51,21 @@ class Datagen(tf.keras.utils.Sequence):
     return int(np.floor(len(self.list_IDs)/self.batch_size))
 
   def __getitem__(self, index):
-    indexes = self.indexes[index * self.batch_size:(index + 1) * self.batch_size] 
-    list_IDs_temp = [self.list_IDs[k] for k in indexes]     # Generate data
+    ##Select a set of
+    indexes = self.indexes[index * self.batch_size:(index + 1) * self.batch_size]
+    if self.val==False:
+      list_IDs_temp = [k for k in indexes]     # Generate data
+    else:
+      list_IDs_temp = [self.list_IDs[k] for k in indexes]
     #print(list_IDs_temp)
     X, y = self.__data_generation(list_IDs_temp) #to be implemented
     return X, y
 
   def on_epoch_end(self):
-    self.indexes = np.arange(len(self.list_IDs))
+    if self.val == True:
+      self.indexes = np.arange(len(self.list_IDs))
+    else:
+      self.indexes = self.list_IDs
     if self.shuffle == True:
       np.random.shuffle(self.indexes)
 
@@ -84,11 +91,12 @@ class Datagen(tf.keras.utils.Sequence):
       #return X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
 
     elif self.val == False: 
-      for i, ID in enumerate(list_IDs_temp):
+      for i, filedata in enumerate(list_IDs_temp):
           # Store sample
-          X[i,] = load_img('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/train/' + ID + '/images/' + ID + '_' + str(i) +'.JPEG')
+          folderName, filename = os.path.basename(filedata).split('.')[0].split('_')
+          X[i,] = load_img('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/train/' + folderName + '/images/' + folderName + '_' + str(filename) +'.JPEG')
           # Store class
-          labelid = self.label_ids[ID]
+          labelid = self.label_ids[folderName]
           y[i] = labelid
       X = X / 255.
       X_transformed = self.augmentor.flow(X, batch_size=self.batch_size, shuffle=False)
@@ -104,15 +112,26 @@ label_ids = {}
 for i in range(len(class_ids)):
   label_ids[class_ids[i].split('\n')[0]] = i
 
-
+####Full path to all images
 train_paths = glob.glob('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/train/**/*.JPEG', recursive=True)
-train_images = []
-for i in train_paths:
-    train_images.append(os.path.basename(i).split('.')[0])
-
+# train_images = []
+# for i in train_paths:
+#   ##Extract the filename from the full qualified name
+#   ##These are list ids to input generator
+#     train_images.append(os.path.basename(i).split('.')[0])
+# ##Folder names in the training folder
 train_labels = []
-for i in train_images:
-    train_labels.append(i.split('_')[0])
+for i in train_paths:
+  ##Extract the filename from the full qualified name
+  ##These are list ids to input generator
+    train_labels.append(os.path.basename(i))
+    #folderName, filename = os.path.basename(i).split('.')[0].split('_')
+    #folderName = os.path.basename(i).split('.')[0].split('_')[0]
+    #train_labels[keyp] = folderName
+##Folder names in the training folder
+# train_labels = []
+# for i in train_images:
+#     train_labels.append(i.split('_')[0])
 
 
 val_data = open('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/val/val_annotations.txt', "r")
@@ -137,9 +156,10 @@ random.shuffle(validation_images)
 X_test = validation_images[:8000]
 X_valid = validation_images[8000:]
 
-training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False, batch_size=100)
-validation_generator = Datagen(X_valid, label_ids, val_dict, val = True, batch_size=100)
-test_generator = Datagen(X_test, label_ids, val_dict, val = True, batch_size=100)
+##pass folder names (train labels), foldername to class mappings(label ids) 
+training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False, batch_size=2000)
+validation_generator = Datagen(X_valid, label_ids, val_dict, val = True, batch_size=200)
+test_generator = Datagen(X_test, label_ids, val_dict, val = True, batch_size=200)
 
 
 def model():
@@ -180,9 +200,9 @@ model = model()
 print(model.summary())
 
 use_saved_model = False
-checkpoint_filepath = 'checkpoint/'
+checkpoint_filepath = 'test/'
 #####################Loading saved model if one exsists
-if not os.path.exists('checkpoint/saved_model.pb') & use_saved_model:
+if not os.path.exists('test/saved_model.pb') & use_saved_model:
     model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"],)
 else:
     # model.load_weights('checkpoint/saved_model.pb') #load the model from file

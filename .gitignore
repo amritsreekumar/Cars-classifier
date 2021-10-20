@@ -1,0 +1,5 @@
+*.zp
+*.zip
+/tiny-imagenet-200
+.vscode/
+token

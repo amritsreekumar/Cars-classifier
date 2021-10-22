@@ -4,6 +4,7 @@ import os
 #import matplotlib.pyplot as plt
 from PIL import Image as pil_image
 import io
+from keras_preprocessing.image import ImageDataGenerator
 '''
 https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 

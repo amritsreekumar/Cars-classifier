@@ -86,9 +86,10 @@ class Datagen(tf.keras.utils.Sequence):
         new_label = self.label_ids[labelid]
         y[i] = new_label
       X = X / 255.
-      X_transformed = self.augmentor.flow(X, batch_size=self.batch_size, shuffle=False)
-      return next(X_transformed), tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
-      #return X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      #X_transformed = self.augmentor.flow(X, batch_size=self.batch_size, shuffle=False)
+      
+      #return next(X_transformed), tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
 
     elif self.val == False: 
       for i, filedata in enumerate(list_IDs_temp):
@@ -157,7 +158,7 @@ X_test = validation_images[:8000]
 X_valid = validation_images[8000:]
 
 ##pass folder names (train labels), foldername to class mappings(label ids) 
-training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False, batch_size=2000)
+training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False, batch_size=200)
 validation_generator = Datagen(X_valid, label_ids, val_dict, val = True, batch_size=200)
 test_generator = Datagen(X_test, label_ids, val_dict, val = True, batch_size=200)
 
@@ -188,7 +189,7 @@ def model():
   x = Dense(units=1024, activation='sigmoid')(x)
   x = Dropout(0.5)(x)
   x = Dense(units=512, activation='sigmoid')(x)
-  x = Dropout(0.5)(x)
+  #x = Dropout(0.5)(x)
   output = Dense(units=200, activation='softmax')(x)
 
 
@@ -199,23 +200,25 @@ def model():
 model = model()
 print(model.summary())
 
-use_saved_model = False
-checkpoint_filepath = 'test/'
+use_saved_model = True
+checkpoint_filepath = 'checkpoint/'
 #####################Loading saved model if one exsists
-if not os.path.exists('test/saved_model.pb') & use_saved_model:
-    model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"],)
-else:
-    # model.load_weights('checkpoint/saved_model.pb') #load the model from file
-    model = tf.keras.models.load_model(checkpoint_filepath)
-    # print('lr is ', K.get_session().run(model.optimizer.lr))
-    loss, acc = model.evaluate_generator(test_generator, steps=3, verbose=0)
-    print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
+# if not os.path.exists('checkpoint_filepath/saved_model.pb') & use_saved_model:
+#     model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"],)
+# else:
+if use_saved_model:
 
-    initial_epoch=50
-    epochs=65
+  # model.load_weights('checkpoint/saved_model.pb') #load the model from file
+  model = tf.keras.models.load_model(checkpoint_filepath)
+  # print('lr is ', K.get_session().run(model.optimizer.lr))
+  loss, acc = model.evaluate_generator(test_generator, steps=3, verbose=0)
+  print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
+
+input()
+
 
 # model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"],)
-
+model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"],)
 
 model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
     filepath=checkpoint_filepath,
@@ -228,7 +231,8 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
 model.fit_generator(generator=training_generator,
                     validation_data=validation_generator,
                     use_multiprocessing=True,
-                    epochs = 50,
+                    epochs = 65,
+                    # initial_epoch=50,
                     callbacks = [model_checkpoint_callback],
                     workers = 6)
 loss, acc = model.evaluate_generator(test_generator, steps=3, verbose=0)

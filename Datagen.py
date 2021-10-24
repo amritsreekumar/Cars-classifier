@@ -8,12 +8,13 @@ from tensorflow.keras.preprocessing.image import load_img
 
 class Datagen(tf.keras.utils.Sequence):
 
-    def __init__(self, list_IDs, label_ids, val_dict, val, batch_size=32, n_classes=200, dim=(64, 64), n_channels=3,
+    def __init__(self, list_IDs, label_ids, val_dict, val, flag = 1, batch_size=32, n_classes=200, dim=(64, 64), n_channels=3,
                  shuffle=True):
         self.val = val
         self.dim = dim
         self.label_ids = label_ids
         self.val_dict = val_dict  # to map between validation images and their corresponding classes
+        self.flag = flag #set value = 1, when 30 percent of original images needs to be passed for training. value = 0, all images augmented
         self.list_IDs = list_IDs
         self.n_channels = n_channels
         self.batch_size = batch_size
@@ -88,9 +89,15 @@ class Datagen(tf.keras.utils.Sequence):
                 labelid = self.label_ids[folderName]
                 y[i] = labelid
             X = X / 255.
-            part_1_X = X[:140]
-            part_2_X = X[140:]
-            X_transformed = self.augmentor.flow(part_1_X, batch_size=140, shuffle=False)
-            X_transformed = X_transformed.next()
-            New_set = np.concatenate((X_transformed,part_2_X),axis=0)
+
+            if self.flag == 1:
+                part_1_X = X[:140]
+                part_2_X = X[140:]
+                X_transformed = self.augmentor.flow(part_1_X, batch_size=140, shuffle=False)
+                X_transformed = X_transformed.next()
+                New_set = np.concatenate((X_transformed,part_2_X),axis=0)
+            else:
+                X_transformed = self.augmentor.flow(X, batch_size=self.batch_size, shuffle=False)
+                New_set = next(X_transformed)
+            
             return New_set, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)

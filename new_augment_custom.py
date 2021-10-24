@@ -2,6 +2,7 @@
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras.preprocessing.image import load_img
+from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.models import Sequential
 from tensorflow.keras import layers
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -18,14 +19,7 @@ Dense, Input, Activation, MaxPool2D, Dropout
 from tensorflow.keras import Model
 import random
 from numpy.random import default_rng
-import tensorflow.keras as K
-from tensorflow.keras.models import Model
-from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.layers import Dense, Conv2D,  MaxPool2D, Flatten, GlobalAveragePooling2D,  BatchNormalization, Layer, Add
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.models import Model
-import resnetkeras
-
+import keras as K
 
 
 
@@ -48,6 +42,8 @@ class Datagen(tf.keras.utils.Sequence):
             shear_range=0.2,
             zoom_range=0.2,
             horizontal_flip=True,
+            vertical_flip=True,
+            brightness_range=[0.2,1.2],
             fill_mode='nearest'
         )
 
@@ -86,7 +82,7 @@ class Datagen(tf.keras.utils.Sequence):
       for i, ID in enumerate(list_IDs_temp):
         # Store sample
         #X[i,] = load_img('tiny-imagenet-200/val/images/' + ID)
-        X[i,] = load_img('./tiny-imagenet-200/val/images/' + ID)
+        X[i,] = load_img('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/val/images/' + ID)
         # Store class
         labelid = self.val_dict[ID]
         new_label = self.label_ids[labelid]
@@ -101,26 +97,30 @@ class Datagen(tf.keras.utils.Sequence):
       for i, filedata in enumerate(list_IDs_temp):
           # Store sample
           folderName, filename = os.path.basename(filedata).split('.')[0].split('_')
-          X[i,] = load_img('./tiny-imagenet-200/train/' + folderName + '/images/' + folderName + '_' + str(filename) +'.JPEG')
+          X[i,] = load_img('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/train/' + folderName + '/images/' + folderName + '_' + str(filename) +'.JPEG')
           # Store class
           labelid = self.label_ids[folderName]
           y[i] = labelid
       X = X / 255.
-      X_transformed = self.augmentor.flow(X, batch_size=self.batch_size, shuffle=False)
-      return next(X_transformed), tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      part_1_X = X[:140]
+      part_2_X = X[140:]
+      X_transformed = self.augmentor.flow(part_1_X, batch_size=140, shuffle=False)
+      X_transformed = X_transformed.next()
+      New_set = np.concatenate((X_transformed,part_2_X),axis=0)
+      return New_set, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
       r#eturn X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
       # return np.array(X), np.array(y)
 
   
 
-class_ids = open('./tiny-imagenet-200/wnids.txt', "r")
+class_ids = open('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/wnids.txt', "r")
 class_ids = class_ids.readlines()
 label_ids = {}
 for i in range(len(class_ids)):
   label_ids[class_ids[i].split('\n')[0]] = i
 
 ####Full path to all images
-train_paths = glob.glob('./tiny-imagenet-200/train/**/*.JPEG', recursive=True)
+train_paths = glob.glob('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/train/**/*.JPEG', recursive=True)
 # train_images = []
 # for i in train_paths:
 #   ##Extract the filename from the full qualified name
@@ -141,7 +141,7 @@ for i in train_paths:
 #     train_labels.append(i.split('_')[0])
 
 
-val_data = open('./tiny-imagenet-200/val/val_annotations.txt', "r")
+val_data = open('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/val/val_annotations.txt', "r")
 val_data = val_data.readlines()
 validation_images = []
 validation_labels = []
@@ -169,14 +169,44 @@ validation_generator = Datagen(X_valid, label_ids, val_dict, val = True, batch_s
 test_generator = Datagen(X_test, label_ids, val_dict, val = True, batch_size=200)
 
 
+def model():
+  input_img = Input(shape=(64, 64, 3))
+  x = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), input_shape=(64,64,3), padding='same', activation=None)(input_img)
+  x = BatchNormalization()(x)
+  x = Activation('relu')(x)
+  x = MaxPool2D(pool_size=(2, 3))(x)
+  #x = Dropout(0.5)(x)
+  x = Conv2D(filters=128, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=None)(x)
+  x = BatchNormalization()(x)
+  x = Activation('relu')(x)
+  x = MaxPool2D(pool_size=(2, 3))(x)
+  #x = Dropout(0.5)(x)
+  x = Conv2D(filters=256, kernel_size=(3, 3), strides=(1, 1),padding='same', activation=None)(x)
+  x = BatchNormalization()(x)
+  x = Activation('relu')(x)
+  x = MaxPool2D(pool_size=(2, 3))(x)
+  #x = Dropout(0.5)(x)
+  # x = Conv2D(filters=512, kernel_size=(3, 3), strides=(1, 1), activation=None)(x)
+  # x = BatchNormalization()(x)
+  # x = Activation('relu')(x)
+  x = Flatten()(x)
+  #x = Dense(units=256, activation='relu')(x)
+  # output = Dense(units=200, activation='softmax')(x)
+  x = Dense(units=1024, activation='sigmoid')(x)
+  x = Dropout(0.5)(x)
+  x = Dense(units=512, activation='sigmoid')(x)
+  #x = Dropout(0.5)(x)
+  output = Dense(units=200, activation='softmax')(x)
 
-model = resnetkeras.ResNet18((64, 64, 3),200)
 
-model.build(input_shape=(None,64,64,3))
+  return Model(input_img, output)
 
+  
+
+model = model()
 print(model.summary())
 
-use_saved_model = False
+use_saved_model = True
 checkpoint_filepath = 'checkpoint/'
 #####################Loading saved model if one exsists
 # if not os.path.exists('checkpoint_filepath/saved_model.pb') & use_saved_model:
@@ -190,7 +220,7 @@ if use_saved_model:
   loss, acc = model.evaluate_generator(test_generator, steps=3, verbose=0)
   print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
 
-#input()
+input()
 
 
 # model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"],)
@@ -206,7 +236,7 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
 # Train model on dataset
 model.fit_generator(generator=training_generator,
                     validation_data=validation_generator,
-                    use_multiprocessing=False,
+                    use_multiprocessing=True,
                     epochs = 65,
                     # initial_epoch=50,
                     callbacks = [model_checkpoint_callback],

@@ -48,6 +48,8 @@ class Datagen(tf.keras.utils.Sequence):
             shear_range=0.2,
             zoom_range=0.2,
             horizontal_flip=True,
+            vertical_flip=True,
+            brightness_range=[0.2,1.2],
             fill_mode='nearest'
         )
 
@@ -106,9 +108,13 @@ class Datagen(tf.keras.utils.Sequence):
           labelid = self.label_ids[folderName]
           y[i] = labelid
       X = X / 255.
-      X_transformed = self.augmentor.flow(X, batch_size=self.batch_size, shuffle=False)
-      return next(X_transformed), tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
-      r#eturn X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      part_1_X = X[:140]
+      part_2_X = X[140:]
+      X_transformed = self.augmentor.flow(part_1_X, batch_size=140, shuffle=False)
+      X_transformed = X_transformed.next()
+      New_set = np.concatenate((X_transformed,part_2_X),axis=0)
+      return New_set, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      #return X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
       # return np.array(X), np.array(y)
 
   

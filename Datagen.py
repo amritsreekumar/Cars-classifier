@@ -8,7 +8,7 @@ from tensorflow.keras.preprocessing.image import load_img
 
 class Datagen(tf.keras.utils.Sequence):
 
-    def __init__(self, list_IDs, label_ids, val_dict, val, flag = 1, batch_size=32, n_classes=200, dim=(64, 64), n_channels=3,
+    def __init__(self, list_IDs, label_ids, val_dict, val, flag = 1, batch_size=200, n_classes=200, dim=(64, 64), n_channels=3,
                  shuffle=True):
         self.val = val
         self.dim = dim
@@ -28,8 +28,6 @@ class Datagen(tf.keras.utils.Sequence):
             shear_range=0.2,
             zoom_range=0.2,
             horizontal_flip=True,
-            vertical_flip=True,
-            brightness_range=[0.2,1.2],
             fill_mode='nearest'
         )
 
@@ -67,7 +65,7 @@ class Datagen(tf.keras.utils.Sequence):
             for i, ID in enumerate(list_IDs_temp):
                 # Store sample
                 # X[i,] = load_img('tiny-imagenet-200/val/images/' + ID)
-                X[i,] = load_img('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/val/images/' + ID)
+                X[i,] = load_img('./tiny-imagenet-200/val/images/' + ID)
                 # Store class
                 labelid = self.val_dict[ID]
                 new_label = self.label_ids[labelid]
@@ -83,17 +81,20 @@ class Datagen(tf.keras.utils.Sequence):
                 # Store sample
                 folderName, filename = os.path.basename(filedata).split('.')[0].split('_')
                 X[i,] = load_img(
-                    '/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/train/' + folderName + '/images/' + folderName + '_' + str(
+                    './tiny-imagenet-200/train/' + folderName + '/images/' + folderName + '_' + str(
                         filename) + '.JPEG')
                 # Store class
                 labelid = self.label_ids[folderName]
                 y[i] = labelid
+
             X = X / 255.
 
             if self.flag == 1:
-                part_1_X = X[:140]
-                part_2_X = X[140:]
-                X_transformed = self.augmentor.flow(part_1_X, batch_size=140, shuffle=False)
+                length = len(X)
+                length = int(0.7*length)
+                part_1_X = X[:length]
+                part_2_X = X[length:]
+                X_transformed = self.augmentor.flow(part_1_X, batch_size=length, shuffle=False)
                 X_transformed = X_transformed.next()
                 New_set = np.concatenate((X_transformed,part_2_X),axis=0)
             else:

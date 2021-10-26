@@ -2,13 +2,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import tensorflow as tf
-import keras
 from tensorflow.keras import datasets,models,layers
-from keras.models import Model
-from keras.callbacks import EarlyStopping
-from keras.layers import Dense, Conv2D,  MaxPool2D, Flatten, GlobalAveragePooling2D,  BatchNormalization, Layer, Add
-from keras.models import Sequential
-from keras.models import Model
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.layers import Dense, Conv2D,  MaxPool2D, Flatten, GlobalAveragePooling2D,  BatchNormalization, Layer, Add
+
 import tensorflow as tf
 class ResnetBlock(Model):
     """
@@ -97,13 +95,3 @@ class ResNet18(Model):
         out = self.flat(out)
         out = self.fc(out)
         return out
-
-model = ResNet18(10)
-print(keras.__version__)
-model.build(input_shape=(None, 32, 32, 3))
-# use categorical_crossentropy since the label is one-hot encoded
-from keras.optimizers import SGD
-
-# opt = SGD(learning_rate=0.1,momentum=0.9,decay = 1e-04) #parameters suggested by He [1]
-model.compile(optimizer="adam", loss='categorical_crossentropy', metrics=["accuracy"])
-model.summary()

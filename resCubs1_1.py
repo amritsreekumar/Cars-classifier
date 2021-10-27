@@ -12,6 +12,7 @@ from tensorflow.keras.layers import Dense, Conv2D,  MaxPool2D, Flatten, GlobalAv
 # from tensorflow.keras import Model
 
 import tensorflow as tf
+import cubs1
 
 class ResnetBlock(Model):
     """
@@ -66,7 +67,7 @@ class ResnetBlock(Model):
         return out
 
 
-class ResNet18(Model):
+class ResNet18Cubs1(Model):
 
     def __init__(self, num_classes, **kwargs):
         """
@@ -78,36 +79,49 @@ class ResNet18(Model):
         self.init_bn = BatchNormalization()
         self.pool_2 = MaxPool2D(pool_size=(2, 2), strides=2, padding="same")
         self.res_1_1 = ResnetBlock(64)
+        self.cub1 = cubs1.cubs1(64, 64)
         self.res_1_2 = ResnetBlock(64)
+        self.cub2 = cubs1.cubs1(64, 64)
         self.res_2_1 = ResnetBlock(128, down_sample=True)
+        self.cub3 = cubs1.cubs1(128, 128)
         self.res_2_2 = ResnetBlock(128)
+        self.cub4 = cubs1.cubs1(128, 128)
         self.res_3_1 = ResnetBlock(256, down_sample=True)
+        self.cub5 = cubs1.cubs1(256, 256)
         self.res_3_2 = ResnetBlock(256)
+        self.cub6 = cubs1.cubs1(256, 256)
         self.res_4_1 = ResnetBlock(512, down_sample=True)
+        self.cub7 = cubs1.cubs1(512, 512)
         self.res_4_2 = ResnetBlock(512)
+        self.cub8 = cubs1.cubs1(512, 512)
         self.avg_pool = GlobalAveragePooling2D()
         self.flat = Flatten()
         self.fc = Dense(num_classes, activation="softmax")
 
     def call(self, inputs):
         # inputs = keras.Input((64, 64, 3))
+        print("input", inputs.shape)
         out = self.conv_1(inputs)
-        print("inputs", inputs.shape)
+        print("conv1_1", out.shape)
         out = self.init_bn(out)
+        print("batchnorm", out.shape)
         out = tf.nn.relu(out)
+        print("relu", out.shape)
         out = self.pool_2(out)
-        for res_block in [self.res_1_1, self.res_1_2, self.res_2_1, self.res_2_2, self.res_3_1, self.res_3_2,
-                          self.res_4_1, self.res_4_2]:
+        print("max pool", out.shape)
+        for res_block in [self.res_1_1, self.cub1, self.res_1_2, self.cub2, self.res_2_1,self.cub3, self.res_2_2, self.cub4, self.res_3_1,self.cub5, self.res_3_2,
+                          self.cub6, self.res_4_1,self.cub7,  self.res_4_2, self.cub8]:
+            
             out = res_block(out)
-            print(res_block.name)
-            print(out.shape)
+            # print(res_block.name)
+            # print(out.shape)
         out = self.avg_pool(out)
         out = self.flat(out)
         out = self.fc(out)
         return out
 
-model = ResNet18(200)
+# model = ResNet18Cubs1(200)
 
-model.build(input_shape=(None, 64, 64, 3))
+# model.build(input_shape=(100, 64, 64, 3))
 
-print(model.summary())
+# print(model.summary())

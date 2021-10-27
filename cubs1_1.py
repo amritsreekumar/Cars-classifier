@@ -11,8 +11,6 @@ from tensorflow.keras.layers import Dense, Conv2D,  MaxPool2D, Flatten, GlobalAv
 # from keras.models import Sequential
 # from tensorflow.keras import Model
 from tensorflow.keras import activations
-import tensorflow.keras.backend as k
-
 
 class cubs1(Model):
     def __init__(self, channels, denseNN, **kwargs):
@@ -33,27 +31,16 @@ class cubs1(Model):
 
     def call(self, x):
         ##BxCxHxW
-        # print("Input to", self.name,x.shape)
+        print("Input to", self.name,x.shape)
         x0 = self.gb(x)
-        # x0_0 = tf.reshape(x0, (x0.shape[0], 1, x0.shape[1]))
-        x0_0 = tf.reshape(x0, (k.shape(x0)[0], 1, k.shape(x0)[1]))
-
-        # x0_0 = tf.keras.layers.Reshape((x0.shape[0], 1, x0.shape[1]))(x0)
-        # print("Shape after GB ", x0_0.shape)
+        print("Shape after GB ", x0.shape)
         ## parallel dense layers
         ##Bx1xN
-        x1 = self.dn1(x0_0)
-        # print(type(x1))
-        # print("dadassda")
-   
-        # x2 = tf.reshape(x1, (x1.shape[0], 1, x1.shape[1]))
-        # print("pppppppppppppppppppppp")
-        x3 = self.dn2(x0_0)
-        # x4 = tf.reshape(x3, (x3.shape[0], 1, x3.shape[1]))
-        x4 = self.dn3(x0_0)
-        # x6 = tf.reshape(x5, (x5.shape[0], 1, x5.shape[1]))
-        # print("x4 shape", x4.shape)
-        
+        x1 = self.dn1(x0)
+        print(x1.shape,"x1")
+        x2 = self.dn2(x0)
+        x3 = self.dn3(x0)
+
         # Similarity_matrix = np.dot(np.array(x1).T, np.array(x2))
         # print("shape x1", x1.shape)
         
@@ -66,13 +53,12 @@ class cubs1(Model):
         #     print("shape similarity mat", Similarity_matrix.shape)
         # except TypeError:
         #     Similarity_matrix = keras.Input(shape=(100, 64, 64))
+        
+        Similarity_matrix = tf.matmul(tf.reshape(x1, (1, x1.shape[1])), x2, transpose_a=True)
 
-        Similarity_matrix = tf.matmul(x1, x3, transpose_a=True)
-        # print("dasdsadasdasasd")
-        # print("shape similarity mat", Similarity_matrix.shape)
         ##BxNxN
         softmax = self.softmax(Similarity_matrix)
-        # print("Shape after softmax", softmax.shape)
+        print("Shape after softmax", softmax.shape)
         ##doubtful
         ##Bx1xN
         # tmp = []
@@ -84,28 +70,23 @@ class cubs1(Model):
         #     print("sf_dot_x3", sf_dot_x3.shape)
         # except TypeError:
         #     sf_dot_x3 = keras.Input(shape=(100, 1, 64))
+        sf_dot_x3 = tf.matmul(tf.reshape(x3, (1, x3.shape[0])), softmax, transpose_a=True)
 
         ##last dense; assuming C = input data channles, and channels is 1st intem in shape list
-        
-        sf_dot_x3 = tf.matmul( x4,softmax )
-        # print("shape sf_dot_x3", sf_dot_x3)
-        x7 = self.dn4(sf_dot_x3)
-        # print("x7 shape", x7.shape)
-        # x8 = tf.reshape(x7, (x7.shape[0], 1, x7.shape[1]))
-        # print("dasdsadasdasasd")
-        ##Add ouput of Dense layer and GAP
-        x9 = self.merge([x7, x0_0])
-        # print("x9 shape", x9.shape)
-        ##Bx1xC
-        x10 = self.sigmoid(x9)
-        # print("after sigmoid", x10.shape)
-        x10 = tf.expand_dims(x10, axis=2)
-        # print("after sigmoid", x10.shape)
-        ##Multiply
-        x11 = self.multiply([x, x10])
-        # print("Out shape ", x11.shape)
 
-        return x11
+        x4 = self.dn4(sf_dot_x3)
+        ##Add ouput of Dense layer and GAP
+        x4 = self.merge([x4, x])
+        print("x4 shape", x4.shape)
+        ##Bx1xC
+        x4 = self.sigmoid(x4)
+        print("after sigmoid", x4.shape)
+
+        ##Multiply
+        x5 = self.multiply([x, x4])
+        print("Out shape ", x5.shape)
+
+        return x5
 
 model = cubs1(3, 64)
 model.build(input_shape=(100, 64, 64, 3))

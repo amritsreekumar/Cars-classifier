@@ -102,7 +102,7 @@ class Datagen(tf.keras.utils.Sequence):
       X = X / 255.
       X_transformed = self.augmentor.flow(X, batch_size=self.batch_size, shuffle=False)
       return next(X_transformed), tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
-      r#eturn X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+      #r#eturn X / 255., tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
       # return np.array(X), np.array(y)
 
   
@@ -152,14 +152,17 @@ for i in range(len(val_data)):
 #X_train, X_test, y_train, y_test = train_test_split(train_labels, train_labels, test_size=0.2, random_state=42, shuffle=True)
 
 
-random.shuffle(validation_images)
+# random.shuffle(validation_images)
 
-X_test = validation_images[:8000]
-X_valid = validation_images[8000:]
+# X_test = validation_images[:8000]
+# X_valid = validation_images[8000:]
+
+X_valid = validation_images[:8000]
+X_test = validation_images[8000:]
 
 ##pass folder names (train labels), foldername to class mappings(label ids) 
-training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False, batch_size=200)
-validation_generator = Datagen(X_valid, label_ids, val_dict, val = True, batch_size=200)
+training_generator = Datagen(train_labels, label_ids, val_dict = None, val = False, batch_size=2000)
+validation_generator = Datagen(X_valid, label_ids, val_dict, val = True, batch_size=2000)
 test_generator = Datagen(X_test, label_ids, val_dict, val = True, batch_size=200)
 
 
@@ -189,7 +192,7 @@ def model():
   x = Dense(units=1024, activation='sigmoid')(x)
   x = Dropout(0.5)(x)
   x = Dense(units=512, activation='sigmoid')(x)
-  #x = Dropout(0.5)(x)
+  # x = Dropout(0.5)(x)
   output = Dense(units=200, activation='softmax')(x)
 
 
@@ -214,8 +217,18 @@ if use_saved_model:
   loss, acc = model.evaluate_generator(test_generator, steps=3, verbose=0)
   print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
 
-input()
 
+
+reduceonplateau = tf.keras.callbacks.ReduceLROnPlateau(
+    monitor="val_loss",
+    factor=0.01,
+    patience=10,
+    verbose=1.0,
+    mode="auto",
+    min_delta=0.005,
+    cooldown=0,
+    min_lr=0.0
+)
 
 # model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"],)
 model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = 'categorical_crossentropy', metrics = ["accuracy"],)
@@ -231,9 +244,9 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
 model.fit_generator(generator=training_generator,
                     validation_data=validation_generator,
                     use_multiprocessing=True,
-                    epochs = 65,
+                    epochs = 100,
                     # initial_epoch=50,
-                    callbacks = [model_checkpoint_callback],
+                    callbacks = [model_checkpoint_callback, reduceonplateau] ,
                     workers = 6)
 loss, acc = model.evaluate_generator(test_generator, steps=3, verbose=0)
 print(loss)

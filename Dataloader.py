@@ -1,14 +1,18 @@
 import numpy as np
-import keras
 import os
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from PIL import Image as pil_image
 import io
+import tensorflow as tf
+from keras_preprocessing.image import ImageDataGenerator
+from tensorflow.keras import utils
+from tensorflow.keras.preprocessing.image import load_img
+import sklearn.preprocessing
 '''
 https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 
 '''
-class DataGeneratorCars(keras.utils.Sequence):
+class DataGeneratorCars(tf.keras.utils.Sequence):
     'Generates data for Keras'
 
     def __init__(self, labels, path_to_train, rescale=1./255, batch_size=32, target_size=(256, 256), channels=1,
@@ -52,7 +56,7 @@ class DataGeneratorCars(keras.utils.Sequence):
         'Generate one batch of data'
         # Generate indexes of the batch
         indexes = self.indexes[index * self.batch_size:(index + 1) * self.batch_size]
-        print(index)
+        #print(index)
 
         # Find list of IDs
         list_IDs_temp = [self.list_IDs[k] for k in indexes]
@@ -85,22 +89,26 @@ class DataGeneratorCars(keras.utils.Sequence):
         batch_y = np.zeros(len(list_IDs_temp), dtype=int)
 
         # Generate data
+        label_binarizer = sklearn.preprocessing.LabelBinarizer()
         for i, ID in enumerate(list_IDs_temp):
             # Store sample
             # X[i,] = np.load('data/' + ID + '.npy')
             #with open()
             #X[i,] = pil_image.open(self.path_to_train + '/' + ID, format='jpeg')
-            with open(self.path_to_train + '/' + ID, 'rb') as f:
-                img = pil_image.open(io.BytesIO(f.read()))
-                if img.size != self.target_size:
-                    img = img.resize(self.target_size, self._PIL_INTERPOLATION_METHODS[resample])
-                    img = np.asarray(img, dtype=self.dtype)
+            img = load_img(self.path_to_train + '/' + ID)
+            if img.size != self.target_size:
+                img = img.resize(self.target_size, self._PIL_INTERPOLATION_METHODS[resample])
+                img = np.asarray(img, dtype=self.dtype)
+                #print(img.shape)
+
+            #print(batch_x.shape)
             batch_x[i] = self._rescale(img)
-
-
-
             # Store class
-            batch_y[i] = self.labels[ID]
-
-        return batch_x, keras.utils.to_categorical(batch_y, num_classes=self.n_classes)
+            try:
+              batch_y[i] = self.labels[ID]
+            except KeyError:
+              continue
+        label_binarizer.fit(range(196))
+        b = label_binarizer.transform(batch_y)
+        return batch_x, b
         #return batch_x, batch_y

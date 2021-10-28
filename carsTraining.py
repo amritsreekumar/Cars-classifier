@@ -1,3 +1,4 @@
+from re import L
 import numpy as np
 
 from tensorflow.keras import layers
@@ -16,19 +17,28 @@ if __name__ == "__main__":
 
     path_to_labels = './carsmeta/cars_train_annos.mat'
     path_to_classes = './carsmeta/cars_meta.mat'
+    #print(path_to_classes)
 
     mat_train = loadmat(path_to_labels)
     labels = {}
+    labelstest = {}
 
     for example in mat_train['annotations'][0]:
         label = example[-2][0][0]
-        image = example[-1][0]
-        labels[image] = label
-  
+        if label < 99:
+            image = example[-1][0]
+            labels[image] = label
+        else:
+            image = example[-1][0]
+            labelstest[image] = label
+
+    
+
+
     print( "Training labels size = ", len(labels))
+    print( "Test labels size = ", len(labelstest))
 
-
-    model = cubs1cubs2res1(196)
+    model = cubs1cubs2res1(98)
 
     model.build(input_shape=(100, 64, 64, 3))
     ##model compilation
@@ -38,13 +48,13 @@ if __name__ == "__main__":
 
     trainGeenrator = DataGeneratorCars(
         labels=labels, rescale=1. / 255, path_to_train=path_to_train_images,
-        batch_size=10, target_size=(256, 256), channels=3, n_classes=196)
+        batch_size=10, target_size=(256, 256), channels=3, n_classes=98)
 
     ##Does batch size have to be exact divisor of training samples
 
-    validGenerator = DataGeneratorCars(
-        labels=labels, rescale=1. / 255, path_to_train=path_to_train_images,
-        batch_size=10, target_size=(256, 256), channels=3, n_classes=196)
+    testGenerator = DataGeneratorCars(
+        labels=labelstest, rescale=1. / 255, path_to_train=path_to_train_images,
+        batch_size=10, target_size=(256, 256), channels=3, n_classes=98)
 
     # validDataGenerator = validationGener.flow_from_directory(
     #     validaDir,

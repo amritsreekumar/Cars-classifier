@@ -108,7 +108,7 @@ class DataGeneratorCars(tf.keras.utils.Sequence):
               batch_y[i] = self.labels[ID]
             except KeyError:
               continue
-        label_binarizer.fit(range(196))
+        label_binarizer.fit(range(98))
         b = label_binarizer.transform(batch_y)
         return batch_x, b
         #return batch_x, batch_y

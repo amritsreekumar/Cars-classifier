@@ -15,8 +15,8 @@ if __name__ == "__main__":
     path_to_train_images = './cars_train'
     #labelsTest = {'00001.jpg': 1, '00002.jpg': 2, '00003.jpg': 3, '00004.jpg': 4, '00005.jpg': 5}
 
-    path_to_labels = './carsmeta/cars_train_annos.mat'
-    path_to_classes = './carsmeta/cars_meta.mat'
+    path_to_labels = './devkit/cars_train_annos.mat'
+    path_to_classes = './devkit/cars_meta.mat'
     #print(path_to_classes)
 
     mat_train = loadmat(path_to_labels)
@@ -65,7 +65,6 @@ if __name__ == "__main__":
     )
 
 
-    #X_train = labels[:3600]
     X_train = dict(list(labels.items())[:3600])
     X_valid = dict(list(labels.items())[3600:])
 
@@ -74,17 +73,17 @@ if __name__ == "__main__":
     print( "Test labels size = ", len(labelstest))
 
     trainGenerator = DataGeneratorCars(
-        labels=X_train, rescale=1. / 255, path_to_train=path_to_train_images,
-        batch_size=100, target_size=(256, 256), channels=3, n_classes=98)
+        labels=X_train, rescale=1. / 255, path_to_train=path_to_train_images, val=False, flag = 1,
+        batch_size=10, target_size=(256, 256), channels=3, n_classes=98)
 
     ##Does batch size have to be exact divisor of training samplesx
     validGenerator = DataGeneratorCars(
-        labels=X_valid, rescale=1. / 255, path_to_train=path_to_train_images,
-        batch_size=100, target_size=(256, 256), channels=3, n_classes=98)
+        labels=X_valid, rescale=1. / 255, path_to_train=path_to_train_images, val=True, flag =0,
+        batch_size=10, target_size=(256, 256), channels=3, n_classes=98)
 
     testGenerator = DataGeneratorCars(
-        labels=labelstest, rescale=1. / 255, path_to_train=path_to_train_images,
-        batch_size=100, target_size=(256, 256), channels=3, n_classes=98)
+        labels=labelstest, rescale=1. / 255, path_to_train=path_to_train_images, val=True, flag = 0,
+        batch_size=10, target_size=(256, 256), channels=3, n_classes=98)
 
     # validDataGenerator = validationGener.flow_from_directory(
     #     validaDir,
@@ -104,12 +103,12 @@ if __name__ == "__main__":
 
     history = model.fit_generator(generator=trainGenerator,
                               validation_data=validGenerator,
-                              use_multiprocessing=False,
+                              use_multiprocessing=True,
                               epochs=100,
                               # initial_epoch=50,
                               callbacks=[model_checkpoint_callback, reduceonplateau],
                               workers=6)
 
-    #loss, acc = model.evaluate_generator(test_generator, steps=3, verbose=1)
+    #loss, acc = model.evaluate_generator(testGenerator, steps=3, verbose=1)
     #print(acc)  
     #print(loss)

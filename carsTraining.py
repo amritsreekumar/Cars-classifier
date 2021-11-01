@@ -12,11 +12,11 @@ import cubsArch2
 from cubsArch2 import cubs1cubs2res1
 import itertools
 if __name__ == "__main__":
-    path_to_train_images = './cars_train'
+    path_to_train_images = './car_ims'
     #labelsTest = {'00001.jpg': 1, '00002.jpg': 2, '00003.jpg': 3, '00004.jpg': 4, '00005.jpg': 5}
 
-    path_to_labels = './devkit/cars_train_annos.mat'
-    path_to_classes = './devkit/cars_meta.mat'
+    path_to_labels = './cars_annos.mat'
+    #path_to_classes = './devkit/cars_meta.mat'
     #print(path_to_classes)
 
     mat_train = loadmat(path_to_labels)
@@ -24,12 +24,11 @@ if __name__ == "__main__":
     labelstest = {}
 
     for example in mat_train['annotations'][0]:
-        label = example[-2][0][0]
+        label = example[5][0]
+        image = example[0][0].split('/')[1]
         if label < 99:
-            image = example[-1][0]
             labels[image] = label
         else:
-            image = example[-1][0]
             labelstest[image] = label
 
     
@@ -64,9 +63,9 @@ if __name__ == "__main__":
         min_lr=0.0
     )
 
-
-    X_train = dict(list(labels.items())[:3600])
-    X_valid = dict(list(labels.items())[3600:])
+    print(len(labels))
+    X_train = dict(list(labels.items())[:7500])
+    X_valid = dict(list(labels.items())[7500:])
 
     print( "Training labels size = ", len(X_train))
     print( "Validation labels size = ", len(X_valid))

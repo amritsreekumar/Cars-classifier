@@ -2,10 +2,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import tensorflow as tf
-import keras
 # from tensorflow.keras import datasets,models,layers
 from tensorflow.keras.models import Model
-from keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping
 # from keras.layers import Dense, Conv2D,  MaxPool2D, Flatten, GlobalAveragePooling2D,  BatchNormalization, Layer, Add
 from tensorflow.keras.layers import Dense, Conv2D,  MaxPool2D, Flatten, GlobalAveragePooling2D,  BatchNormalization, Layer, Add, Activation, Multiply
 # from keras.models import Sequential
@@ -26,7 +25,7 @@ class cubs1(Model):
         self.dn3 = Dense(units=denseNN)
         self.dn4 = Dense(units=self.C)
         ##dot(dn2T, dn3) nx1 1xn = nxn
-        self.softmax = Activation(activations.softmax)
+        # self.softmax = Activation(activations.softmax)
         self.merge = Add()
         self.sigmoid = Activation(activations.sigmoid)
         self.multiply = Multiply()
@@ -71,7 +70,10 @@ class cubs1(Model):
         # print("dasdsadasdasasd")
         # print("shape similarity mat", Similarity_matrix.shape)
         ##BxNxN
-        softmax = self.softmax(Similarity_matrix)
+        # softmax = self.softmax(Similarity_matrix)
+        # softmax = Activation(activations.softmax(Similarity_matrix, axis=-1))
+        softmax = tf.keras.activations.softmax(Similarity_matrix, axis=1)
+
         # print("Shape after softmax", softmax.shape)
         ##doubtful
         ##Bx1xN
@@ -87,7 +89,7 @@ class cubs1(Model):
 
         ##last dense; assuming C = input data channles, and channels is 1st intem in shape list
         
-        sf_dot_x3 = tf.matmul( x4,softmax )
+        sf_dot_x3 = tf.matmul(x4, softmax)
         # print("shape sf_dot_x3", sf_dot_x3)
         x7 = self.dn4(sf_dot_x3)
         # print("x7 shape", x7.shape)
@@ -103,10 +105,6 @@ class cubs1(Model):
         # print("after sigmoid", x10.shape)
         ##Multiply
         x11 = self.multiply([x, x10])
-        # print("Out shape ", x11.shape)
+        # print("x11 shape ", x11.shape)
 
         return x11
-
-model = cubs1(3, 64)
-model.build(input_shape=(100, 64, 64, 3))
-model.summary()

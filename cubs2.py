@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import tensorflow as tfclear
 import tensorflow as tf
-import keras
 # from tensorflow.keras import datasets,models,layers
 from tensorflow.keras.models import Model
-from keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping
 # from keras.layers import Dense, Conv2D,  MaxPool2D, Flatten, GlobalAveragePooling2D,  BatchNormalization, Layer, Add
 from tensorflow.keras.layers import Dense, Conv2D,  MaxPool2D, Flatten, GlobalAveragePooling2D,  BatchNormalization, Layer, Add, Activation, Multiply
 # from keras.models import Sequential
@@ -25,7 +25,7 @@ class cubs2(Model):
         self.conv3 = Conv2D(filters=1, kernel_size=(1,1))
         
     
-        self.softmax = Activation(activations.softmax)
+        # self.softmax = Activation(activations.softmax)
        
         self.sigmoid = Activation(activations.sigmoid)
         self.multiply = Multiply()
@@ -39,7 +39,8 @@ class cubs2(Model):
 
         Similarity_matrix = tf.matmul(x0, x1, transpose_a=True)
 
-        softmax = self.softmax(Similarity_matrix)
+        # softmax = self.softmax(Similarity_matrix)
+        softmax = tf.keras.activations.softmax(Similarity_matrix, axis=1)
 
         features = tf.matmul(x2, softmax)
 
@@ -51,9 +52,6 @@ class cubs2(Model):
 
         return out
 
-model = cubs2()
-model.build(input_shape=(100, 64, 64, 300))
-model.summary()
 
 
 

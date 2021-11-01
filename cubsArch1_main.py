@@ -28,115 +28,115 @@ from cubsArch1 import cubsArch1
 import DatagenAugndUnAug
 
 
+if __name__ == '__main__':
+    class_ids = open('./tiny-imagenet-200/wnids.txt', "r")
+    class_ids = class_ids.readlines()
+    label_ids = {}
+    for i in range(len(class_ids)):
+        label_ids[class_ids[i].split('\n')[0]] = i
 
-class_ids = open('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/wnids.txt', "r")
-class_ids = class_ids.readlines()
-label_ids = {}
-for i in range(len(class_ids)):
-    label_ids[class_ids[i].split('\n')[0]] = i
-
-####Full path to all images
-train_paths = glob.glob('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/train/**/*.JPEG', recursive=True)
-# train_images = []
-# for i in train_paths:
-#   ##Extract the filename from the full qualified name
-#   ##These are list ids to input generator
-#     train_images.append(os.path.basename(i).split('.')[0])
-# ##Folder names in the training folder
-train_labels = []
-for i in train_paths:
-    ##Extract the filename from the full qualified name
-    ##These are list ids to input generator
-    train_labels.append(os.path.basename(i))
-    # folderName, filename = os.path.basename(i).split('.')[0].split('_')
-    # folderName = os.path.basename(i).split('.')[0].split('_')[0]
-    # train_labels[keyp] = folderName
-##Folder names in the training folder
-# train_labels = []
-# for i in train_images:
-#     train_labels.append(i.split('_')[0])
-
-
-val_data = open('/home/rahulnai/Workspace/Cars-classifier/tiny-imagenet-200/val/val_annotations.txt', "r")
-val_data = val_data.readlines()
-validation_images = []
-validation_labels = []
-val_dict = {}
-for i in range(len(val_data)):
-    image_id = val_data[i].split('\t')[0]
-    validation_images.append(image_id)
-    image_label = val_data[i].split('\t')[1]
-    validation_labels.append(image_label)
-    val_dict[validation_images[i]] = validation_labels[i]
-
-# X_train, X_test, y_train, y_test = train_test_split(train_labels, train_labels, test_size=0.2, random_state=42, shuffle=True)
+    ####Full path to all images
+    train_paths = glob.glob('./tiny-imagenet-200/train/**/*.JPEG', recursive=True)
+    # train_images = []
+    # for i in train_paths:
+    #   ##Extract the filename from the full qualified name
+    #   ##These are list ids to input generator
+    #     train_images.append(os.path.basename(i).split('.')[0])
+    # ##Folder names in the training folder
+    train_labels = []
+    for i in train_paths:
+        ##Extract the filename from the full qualified name
+        ##These are list ids to input generator
+        train_labels.append(os.path.basename(i))
+        # folderName, filename = os.path.basename(i).split('.')[0].split('_')
+        # folderName = os.path.basename(i).split('.')[0].split('_')[0]
+        # train_labels[keyp] = folderName
+    ##Folder names in the training folder
+    # train_labels = []
+    # for i in train_images:
+    #     train_labels.append(i.split('_')[0])
 
 
-# random.shuffle(validation_images)
+    val_data = open('./tiny-imagenet-200/val/val_annotations.txt', "r")
+    val_data = val_data.readlines()
+    validation_images = []
+    validation_labels = []
+    val_dict = {}
+    for i in range(len(val_data)):
+        image_id = val_data[i].split('\t')[0]
+        validation_images.append(image_id)
+        image_label = val_data[i].split('\t')[1]
+        validation_labels.append(image_label)
+        val_dict[validation_images[i]] = validation_labels[i]
 
-# X_test = validation_images[:8000]
-# X_valid = validation_images[8000:]
+    # X_train, X_test, y_train, y_test = train_test_split(train_labels, train_labels, test_size=0.2, random_state=42, shuffle=True)
 
-X_valid = validation_images[:8000]
-X_test = validation_images[8000:]
 
-##pass folder names (train labels), foldername to class mappings(label ids)
-training_generator = DatagenAugndUnAug.Datagen(train_labels, label_ids, val_dict=None, val=False, batch_size=1000, flag=1)
-validation_generator = DatagenAugndUnAug.Datagen(X_valid, label_ids, val_dict, val=True, batch_size=1000, flag=0)
-test_generator = DatagenAugndUnAug.Datagen(X_test, label_ids, val_dict, val=True, batch_size=200, flag=0)
+    # random.shuffle(validation_images)
 
-model = cubsArch1(200)
+    # X_test = validation_images[:8000]
+    # X_valid = validation_images[8000:]
 
-model.build(input_shape=(100, 64, 64, 3))
+    X_valid = validation_images[:8000]
+    X_test = validation_images[8000:]
 
-print(model.summary())
+    ##pass folder names (train labels), foldername to class mappings(label ids)
+    training_generator = DatagenAugndUnAug.Datagen(train_labels, label_ids, val_dict=None, val=False, batch_size=200, flag=1)
+    validation_generator = DatagenAugndUnAug.Datagen(X_valid, label_ids, val_dict, val=True, batch_size=200, flag=0)
+    test_generator = DatagenAugndUnAug.Datagen(X_test, label_ids, val_dict, val=True, batch_size=200, flag=0)
 
-use_saved_model = False
-# checkpoint_filepath = 'resnet_checkpoint/'
+    model = cubsArch1(200)
 
-# model = resnetkeras.ResNet18((64, 64, 3),200)
+    model.build(input_shape=(100, 64, 64, 3))
 
-# model.build(input_shape=(None,64,64,3))
+    print(model.summary())
 
-print(model.summary())
+    use_saved_model = False
+    # checkpoint_filepath = 'resnet_checkpoint/'
 
-# use_saved_model = False
-# checkpoint_filepath = 'resnet_checkpoint/'
+    # model = resnetkeras.ResNet18((64, 64, 3),200)
 
-model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='categorical_crossentropy',
-              metrics=["accuracy"])
+    # model.build(input_shape=(None,64,64,3))
 
-# model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-#     filepath=checkpoint_filepath,
-#     save_weights_only=False,
-#     monitor='val_accuracy',
-#     mode='max',
-#     save_best_only=True)
+    print(model.summary())
 
-reduceonplateau = tf.keras.callbacks.ReduceLROnPlateau(
-    monitor="val_loss",
-    factor=0.001,
-    patience=5,
-    verbose=1.0,
-    mode="auto",
-    min_delta=0.005,
-    cooldown=0,
-    min_lr=0.0
-)
-print("len valid", len(validation_labels))
+    # use_saved_model = False
+    checkpoint_filepath = 'cubsArch1/'
 
-# Train model on dataset
-history = model.fit_generator(generator=training_generator,
-                              validation_data=validation_generator,
-                              use_multiprocessing=True,
-                              epochs=56,
-                              # initial_epoch=50,
-                              callbacks=[ reduceonplateau],
-                              workers=6)
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='categorical_crossentropy',
+                metrics=["accuracy"])
 
-# print('\n ',history.keys())
-# input()
+    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+        filepath=checkpoint_filepath,
+        save_weights_only=False,
+        monitor='val_accuracy',
+        mode='max',
+        save_best_only=False)
 
-loss, acc = model.evaluate_generator(test_generator, steps=3, verbose=1)
-print(loss)
-print(acc)
+    reduceonplateau = tf.keras.callbacks.ReduceLROnPlateau(
+        monitor="val_loss",
+        factor=0.2,
+        patience=5,
+        verbose=1.0,
+        mode="auto",
+        min_delta=0.005,
+        cooldown=0,
+        min_lr=0.0
+    )
+    print("len valid", len(validation_labels))
+
+    # Train model on dataset
+    history = model.fit_generator(generator=training_generator,
+                                validation_data=validation_generator,
+                                use_multiprocessing=True,
+                                epochs=1,
+                                # initial_epoch=50,
+                                callbacks=[reduceonplateau,model_checkpoint_callback],
+                                workers=10)
+
+    # print('\n ',history.keys())
+    # input()
+
+    loss, acc = model.evaluate_generator(test_generator, steps=3, verbose=1)
+    print(loss)
+    print(acc)

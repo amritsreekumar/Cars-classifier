@@ -186,8 +186,8 @@ X_valid = validation_images[:8000]
 X_test = validation_images[8000:]
 
 ##pass folder names (train labels), foldername to class mappings(label ids)
-training_generator = Datagen(train_labels, label_ids, val_dict=None, val=False, batch_size=2000, flag=1)
-validation_generator = Datagen(X_valid, label_ids, val_dict, val=True, batch_size=2000, flag=0)
+training_generator = Datagen(train_labels, label_ids, val_dict=None, val=False, batch_size=200, flag=1)
+validation_generator = Datagen(X_valid, label_ids, val_dict, val=True, batch_size=200, flag=0)
 test_generator = Datagen(X_test, label_ids, val_dict, val=True, batch_size=200, flag=0)
 
 model = ResNet18(200)
@@ -205,7 +205,7 @@ use_saved_model = False
 
 print(model.summary())
 
-use_saved_model = False
+use_saved_model = True
 checkpoint_filepath = 'resnet_checkpoint/'
 
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='categorical_crossentropy',
@@ -231,17 +231,16 @@ reduceonplateau = tf.keras.callbacks.ReduceLROnPlateau(
 print("len valid", len(validation_labels))
 
 # Train model on dataset
-history = model.fit_generator(generator=training_generator,
-                              validation_data=validation_generator,
-                              use_multiprocessing=False,
-                              epochs=100,
-                              # initial_epoch=50,
-                              callbacks=[model_checkpoint_callback, reduceonplateau],
-                              workers=6)
+# model.fit_generator(generator=training_generator,
+#                               validation_data=validation_generator,
+#                               use_multiprocessing=False,
+#                               epochs=100,
+#                               # initial_epoch=50,
+#                               callbacks=[model_checkpoint_callback, reduceonplateau],
+#                               workers=6)
 
 # print('\n ',history.keys())
 # input()
-
-loss, acc = model.evaluate_generator(test_generator, steps=3, verbose=1)
+loss, acc = model.evaluate_generator(validation_generator, steps=3, verbose=1)
 print(loss)
 print(acc)
